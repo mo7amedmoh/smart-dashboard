@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Settings, Database, Server, Save, Upload, Target, Palette } from "lucide-react";
+import {
+  Settings,
+  Database,
+  Server,
+  Save,
+  Upload,
+  Target,
+  Palette,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 
 const Configuration = ({ config, setConfig }) => {
@@ -34,16 +42,14 @@ const Configuration = ({ config, setConfig }) => {
             const clean = k.toLowerCase().replace(/[\s_]/g, "");
             return clean.includes("name");
           });
-          const officeKey = keys.find((k) => k.toLowerCase().replace(/[\s_]/g, "").includes("office")) || 
-                            keys.find((k) => {
-            const clean = k.toLowerCase().replace(/[\s_]/g, "");
-            return (
-              clean.includes("zone") ||
-              clean.includes("area") ||
-              clean === "oz" ||
-              clean === "operationzone"
-            );
-          });
+          const officeKey =
+            keys.find((k) =>
+              k.toLowerCase().replace(/[\s_]/g, "").includes("office"),
+            ) ||
+            keys.find((k) => {
+              const clean = k.toLowerCase().replace(/[\s_]/g, "");
+              return clean.includes("sc office") || clean === "sc office";
+            });
 
           if (codeKey && nameKey && row[codeKey]) {
             const sCode = String(row[codeKey]).trim().toUpperCase();
@@ -61,7 +67,8 @@ const Configuration = ({ config, setConfig }) => {
         const initialTargets = localConfig.officeTargets || {};
         const globalTarget = localConfig.dailyCNURTarget || 1.5;
         officesList.forEach((off) => {
-          if (initialTargets[off] === undefined) initialTargets[off] = globalTarget; // Default target
+          if (initialTargets[off] === undefined)
+            initialTargets[off] = globalTarget; // Default target
         });
 
         const newConfig = {
@@ -129,16 +136,19 @@ const Configuration = ({ config, setConfig }) => {
           const clean = k.toLowerCase().replace(/[\s_]/g, "");
           return clean.includes("name");
         });
-        const officeKey = keys.find((k) => k.toLowerCase().replace(/[\s_]/g, "").includes("office")) || 
-                          keys.find((k) => {
-          const clean = k.toLowerCase().replace(/[\s_]/g, "");
-          return (
-            clean.includes("zone") ||
-            clean.includes("area") ||
-            clean === "oz" ||
-            clean === "operationzone"
-          );
-        });
+        const officeKey =
+          keys.find((k) =>
+            k.toLowerCase().replace(/[\s_]/g, "").includes("office"),
+          ) ||
+          keys.find((k) => {
+            const clean = k.toLowerCase().replace(/[\s_]/g, "");
+            return (
+              clean.includes("zone") ||
+              clean.includes("area") ||
+              clean === "oz" ||
+              clean === "operationzone"
+            );
+          });
 
         if (codeKey && nameKey && row[codeKey]) {
           const sCode = String(row[codeKey]).trim().toUpperCase();
@@ -157,7 +167,8 @@ const Configuration = ({ config, setConfig }) => {
         const initialTargets = localConfig.officeTargets || {};
         const globalTarget = localConfig.dailyCNURTarget || 1.5;
         officesList.forEach((off) => {
-          if (initialTargets[off] === undefined) initialTargets[off] = globalTarget; // Default target
+          if (initialTargets[off] === undefined)
+            initialTargets[off] = globalTarget; // Default target
         });
 
         const newConfig = {
@@ -235,7 +246,8 @@ const Configuration = ({ config, setConfig }) => {
       >
         <div
           style={{
-            background: "linear-gradient(135deg, var(--accent), var(--accent-glow))",
+            background:
+              "linear-gradient(135deg, var(--accent), var(--accent-glow))",
             padding: "0.75rem",
             borderRadius: "12px",
           }}
@@ -303,13 +315,43 @@ const Configuration = ({ config, setConfig }) => {
                 padding: "8px",
               }}
             >
-              <div style={{ width: "20px", height: "100%", background: "#3b82f6", borderRadius: "4px" }}></div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ height: "10px", width: "60%", background: "rgba(255,255,255,0.2)", borderRadius: "2px" }}></div>
-                <div style={{ height: "10px", width: "100%", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}></div>
+              <div
+                style={{
+                  width: "20px",
+                  height: "100%",
+                  background: "#3b82f6",
+                  borderRadius: "4px",
+                }}
+              ></div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "10px",
+                    width: "60%",
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: "10px",
+                    width: "100%",
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
               </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>Default Dark</span>
+            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+              Default Dark
+            </span>
           </div>
 
           <div
@@ -335,17 +377,49 @@ const Configuration = ({ config, setConfig }) => {
                 padding: "8px",
               }}
             >
-              <div style={{ width: "20px", height: "100%", background: "#ff7900", borderRadius: "4px" }}></div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ height: "10px", width: "60%", background: "rgba(255,255,255,0.2)", borderRadius: "2px" }}></div>
-                <div style={{ height: "10px", width: "100%", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}></div>
+              <div
+                style={{
+                  width: "20px",
+                  height: "100%",
+                  background: "#ff7900",
+                  borderRadius: "4px",
+                }}
+              ></div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "10px",
+                    width: "60%",
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: "10px",
+                    width: "100%",
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
               </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>Orange.eg Style</span>
+            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+              Orange.eg Style
+            </span>
           </div>
 
           <div
-            onClick={() => setLocalConfig({ ...localConfig, theme: "orange-bright" })}
+            onClick={() =>
+              setLocalConfig({ ...localConfig, theme: "orange-bright" })
+            }
             style={{
               flex: "1 1 200px",
               cursor: "pointer",
@@ -368,13 +442,43 @@ const Configuration = ({ config, setConfig }) => {
                 border: "1px solid rgba(0,0,0,0.1)",
               }}
             >
-              <div style={{ width: "20px", height: "100%", background: "#ff7900", borderRadius: "4px" }}></div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ height: "10px", width: "60%", background: "rgba(0,0,0,0.1)", borderRadius: "2px" }}></div>
-                <div style={{ height: "10px", width: "100%", background: "rgba(0,0,0,0.05)", borderRadius: "2px" }}></div>
+              <div
+                style={{
+                  width: "20px",
+                  height: "100%",
+                  background: "#ff7900",
+                  borderRadius: "4px",
+                }}
+              ></div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "10px",
+                    width: "60%",
+                    background: "rgba(0,0,0,0.1)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: "10px",
+                    width: "100%",
+                    background: "rgba(0,0,0,0.05)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
               </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>Orange Bright</span>
+            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+              Orange Bright
+            </span>
           </div>
 
           <div
@@ -400,17 +504,59 @@ const Configuration = ({ config, setConfig }) => {
                 padding: "8px",
                 border: "1px solid rgba(0,0,0,0.1)",
                 position: "relative",
-                overflow: "hidden"
+                overflow: "hidden",
               }}
             >
-              <div style={{ position: "absolute", bottom: "-10px", left: "-10px", width: "40px", height: "40px", borderRadius: "50%", border: "4px solid rgba(140, 198, 63, 0.3)" }}></div>
-              <div style={{ width: "20px", height: "100%", background: "#1f497d", borderRadius: "4px", zIndex: 1 }}></div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px", zIndex: 1 }}>
-                <div style={{ height: "10px", width: "60%", background: "rgba(0,0,0,0.1)", borderRadius: "2px" }}></div>
-                <div style={{ height: "10px", width: "100%", background: "rgba(0,0,0,0.05)", borderRadius: "2px" }}></div>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-10px",
+                  left: "-10px",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: "4px solid rgba(140, 198, 63, 0.3)",
+                }}
+              ></div>
+              <div
+                style={{
+                  width: "20px",
+                  height: "100%",
+                  background: "#1f497d",
+                  borderRadius: "4px",
+                  zIndex: 1,
+                }}
+              ></div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    height: "10px",
+                    width: "60%",
+                    background: "rgba(0,0,0,0.1)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: "10px",
+                    width: "100%",
+                    background: "rgba(0,0,0,0.05)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
               </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>Mobi Corporate</span>
+            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+              Mobi Corporate
+            </span>
           </div>
 
           <div
@@ -437,13 +583,43 @@ const Configuration = ({ config, setConfig }) => {
                 border: "1px solid rgba(0,0,0,0.1)",
               }}
             >
-              <div style={{ width: "20px", height: "100%", background: "#124191", borderRadius: "4px" }}></div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ height: "10px", width: "60%", background: "rgba(0,0,0,0.1)", borderRadius: "2px" }}></div>
-                <div style={{ height: "10px", width: "100%", background: "rgba(0,0,0,0.05)", borderRadius: "2px" }}></div>
+              <div
+                style={{
+                  width: "20px",
+                  height: "100%",
+                  background: "#124191",
+                  borderRadius: "4px",
+                }}
+              ></div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "10px",
+                    width: "60%",
+                    background: "rgba(0,0,0,0.1)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: "10px",
+                    width: "100%",
+                    background: "rgba(0,0,0,0.05)",
+                    borderRadius: "2px",
+                  }}
+                ></div>
               </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>Nokia Corporate</span>
+            <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+              Nokia Corporate
+            </span>
           </div>
         </div>
       </div>
@@ -630,43 +806,54 @@ const Configuration = ({ config, setConfig }) => {
             marginBottom: "1.5rem",
           }}
         >
-          Define the total number of cells for each technology and set performance targets.
+          Define the total number of cells for each technology and set
+          performance targets.
         </p>
 
-        <div style={{ marginBottom: "2rem", padding: "1.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
-           <label
+        <div
+          style={{
+            marginBottom: "2rem",
+            padding: "1.5rem",
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: "12px",
+            border: "1px solid var(--glass-border)",
+          }}
+        >
+          <label
+            style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              color: "var(--text-secondary)",
+              fontSize: "0.875rem",
+              fontWeight: "600",
+            }}
+          >
+            Global Daily CNUR Target
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <input
+              type="number"
+              name="dailyCNURTarget"
+              step="0.1"
+              value={localConfig.dailyCNURTarget || 1.5}
+              onChange={handleChange}
               style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                color: "var(--text-secondary)",
-                fontSize: "0.875rem",
-                fontWeight: "600"
+                width: "120px",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                border: "1px solid var(--glass-border)",
+                background: "rgba(0,0,0,0.2)",
+                color: "white",
+                outline: "none",
+                fontFamily: "inherit",
               }}
+            />
+            <span
+              style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}
             >
-              Global Daily CNUR Target
-            </label>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <input
-                type="number"
-                name="dailyCNURTarget"
-                step="0.1"
-                value={localConfig.dailyCNURTarget || 1.5}
-                onChange={handleChange}
-                style={{
-                  width: "120px",
-                  padding: "0.75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--glass-border)",
-                  background: "rgba(0,0,0,0.2)",
-                  color: "white",
-                  outline: "none",
-                  fontFamily: "inherit",
-                }}
-              />
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-                Rows in the daily table exceeding this value will be highlighted.
-              </span>
-            </div>
+              Rows in the daily table exceeding this value will be highlighted.
+            </span>
+          </div>
         </div>
 
         <div
