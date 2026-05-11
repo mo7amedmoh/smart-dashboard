@@ -30,7 +30,9 @@ const Configuration = ({ config, setConfig }) => {
 
         const mapping = {};
         const officeMapping = {};
+        const ozMapping = {};
         const officesSet = new Set();
+        const ozSet = new Set();
         let count = 0;
         rawData.forEach((row) => {
           const keys = Object.keys(row);
@@ -50,6 +52,15 @@ const Configuration = ({ config, setConfig }) => {
               const clean = k.toLowerCase().replace(/[\s_]/g, "");
               return clean.includes("sc office") || clean === "sc office";
             });
+          const ozKey = keys.find((k) => {
+            const clean = k.toLowerCase().replace(/[\s_]/g, "");
+            return (
+              clean.includes("zone") ||
+              clean.includes("area") ||
+              clean === "oz" ||
+              clean === "operationzone"
+            );
+          });
 
           if (codeKey && nameKey && row[codeKey]) {
             const sCode = String(row[codeKey]).trim().toUpperCase();
@@ -59,11 +70,17 @@ const Configuration = ({ config, setConfig }) => {
               officeMapping[sCode] = officeName;
               officesSet.add(officeName);
             }
+            if (ozKey && row[ozKey]) {
+              const ozName = String(row[ozKey]).trim();
+              ozMapping[sCode] = ozName;
+              ozSet.add(ozName);
+            }
             count++;
           }
         });
 
         const officesList = Array.from(officesSet).sort();
+        const ozList = Array.from(ozSet).sort();
         const initialTargets = localConfig.officeTargets || {};
         const globalTarget = localConfig.dailyCNURTarget || 1.5;
         officesList.forEach((off) => {
@@ -75,7 +92,9 @@ const Configuration = ({ config, setConfig }) => {
           ...localConfig,
           siteDatabase: mapping,
           officeMapping,
+          ozMapping,
           officesList,
+          ozList,
           officeTargets: initialTargets,
         };
         setLocalConfig(newConfig);
@@ -124,7 +143,9 @@ const Configuration = ({ config, setConfig }) => {
 
       const mapping = {};
       const officeMapping = {};
+      const ozMapping = {};
       const officesSet = new Set();
+      const ozSet = new Set();
       let count = 0;
       rawData.forEach((row) => {
         const keys = Object.keys(row);
@@ -137,18 +158,22 @@ const Configuration = ({ config, setConfig }) => {
           return clean.includes("name");
         });
         const officeKey =
-          keys.find((k) =>
-            k.toLowerCase().replace(/[\s_]/g, "").includes("office"),
-          ) ||
           keys.find((k) => {
             const clean = k.toLowerCase().replace(/[\s_]/g, "");
-            return (
-              clean.includes("zone") ||
-              clean.includes("area") ||
-              clean === "oz" ||
-              clean === "operationzone"
-            );
-          });
+            return clean.includes("sc office") || clean === "sc office";
+          }) ||
+          keys.find((k) =>
+            k.toLowerCase().replace(/[\s_]/g, "").includes("office"),
+          );
+        const ozKey = keys.find((k) => {
+          const clean = k.toLowerCase().replace(/[\s_]/g, "");
+          return (
+            clean.includes("zone") ||
+            clean.includes("area") ||
+            clean === "oz" ||
+            clean === "operationzone"
+          );
+        });
 
         if (codeKey && nameKey && row[codeKey]) {
           const sCode = String(row[codeKey]).trim().toUpperCase();
@@ -158,12 +183,18 @@ const Configuration = ({ config, setConfig }) => {
             officeMapping[sCode] = officeName;
             officesSet.add(officeName);
           }
+          if (ozKey && row[ozKey]) {
+            const ozName = String(row[ozKey]).trim();
+            ozMapping[sCode] = ozName;
+            ozSet.add(ozName);
+          }
           count++;
         }
       });
 
       if (count > 0) {
         const officesList = Array.from(officesSet).sort();
+        const ozList = Array.from(ozSet).sort();
         const initialTargets = localConfig.officeTargets || {};
         const globalTarget = localConfig.dailyCNURTarget || 1.5;
         officesList.forEach((off) => {
@@ -175,7 +206,9 @@ const Configuration = ({ config, setConfig }) => {
           ...localConfig,
           siteDatabase: mapping,
           officeMapping,
+          ozMapping,
           officesList,
+          ozList,
           officeTargets: initialTargets,
         };
         setLocalConfig(newConfig);

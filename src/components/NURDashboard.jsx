@@ -270,6 +270,10 @@ const extractDataWithNUR = (rawData, config) => {
       if (config?.officeMapping && config.officeMapping[sCode]) {
         sOffice = config.officeMapping[sCode];
       }
+      let sOZ = "Other";
+      if (config?.ozMapping && config.ozMapping[sCode]) {
+        sOZ = config.ozMapping[sCode];
+      }
 
       let idKey = Object.keys(row).find(k => {
         const lower = k.trim().toLowerCase();
@@ -302,6 +306,7 @@ const extractDataWithNUR = (rawData, config) => {
         siteCode: sCode,
         siteName: sName,
         office: sOffice,
+        oz: sOZ,
         week: weekStr,
         month: monthStr,
         dayOfWeek: dayName,
@@ -342,9 +347,10 @@ const NURDashboard = ({ config, data, setData }) => {
   }, [processedData]);
 
   const availableOZs = useMemo(() => {
-    const ozs = new Set(processedData.map((d) => d.office).filter(Boolean));
+    if (config.ozList && config.ozList.length > 0) return config.ozList;
+    const ozs = new Set(processedData.map((d) => d.oz).filter(Boolean));
     return Array.from(ozs).sort();
-  }, [processedData]);
+  }, [processedData, config]);
 
   useEffect(() => {
     if (
@@ -373,7 +379,7 @@ const NURDashboard = ({ config, data, setData }) => {
       filtered = filtered.filter((d) => d.week === selectedWeek);
     }
     if (selectedOZ !== "All") {
-      filtered = filtered.filter((d) => d.office === selectedOZ);
+      filtered = filtered.filter((d) => d.oz === selectedOZ);
     }
     return filtered;
   }, [processedData, selectedWeek, selectedOZ]);
@@ -657,7 +663,8 @@ const NURDashboard = ({ config, data, setData }) => {
     filteredData.forEach((row) => {
       const off = row.office || "Other";
       if (!officeMap[off]) {
-        // If we have a fixed list from DB, don't add new offices from report to the chart
+        // If we have a fixed list from DB, we only add if it's not strictly filtered
+        // OR if there's no OZ filter, we keep the DB list as is.
         if (config.officesList && config.officesList.length > 0) return;
         officeMap[off] = { 
           name: off, 
@@ -667,8 +674,16 @@ const NURDashboard = ({ config, data, setData }) => {
       }
       officeMap[off].cnur += row.CNUR;
     });
-    return Object.values(officeMap).sort((a, b) => b.cnur - a.cnur);
-  }, [filteredData, isDataLoaded, config]);
+
+    let finalData = Object.values(officeMap);
+    
+    // If an OZ is selected, only show offices that actually have data (correlated)
+    if (selectedOZ !== "All") {
+      finalData = finalData.filter(d => d.cnur > 0);
+    }
+
+    return finalData.sort((a, b) => b.cnur - a.cnur);
+  }, [filteredData, isDataLoaded, config, selectedOZ]);
 
   const trendData = useMemo(() => {
     if (!isDataLoaded) return [];
