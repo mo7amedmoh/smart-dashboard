@@ -777,9 +777,10 @@ const NURDashboard = ({ config, data, setData }) => {
 
     const areaKey =
       filteredData.length > 0
-        ? Object.keys(filteredData[0]).find(
-            (k) => k.toLowerCase().replace(/[\s_]/g, "") === "area",
-          )
+        ? Object.keys(filteredData[0]).find((k) => {
+            const clean = k.toLowerCase().replace(/[\s_]/g, "");
+            return clean === "area";
+          })
         : null;
     const respKey =
       filteredData.length > 0
