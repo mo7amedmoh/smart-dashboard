@@ -31,7 +31,7 @@ import {
   Cell,
   PieChart,
   Pie,
-  LabelList
+  LabelList,
 } from "recharts";
 import FileUpload from "./FileUpload";
 
@@ -95,7 +95,7 @@ const parseExcelDate = (val) => {
       d.getUTCDate(),
       d.getUTCHours(),
       d.getUTCMinutes(),
-      d.getUTCSeconds()
+      d.getUTCSeconds(),
     );
   }
   const d = new Date(val);
@@ -120,7 +120,7 @@ const extractDataWithNUR = (rawData, config) => {
   const c3G = Number(config?.cells3G) || 0;
   const c4G = Number(config?.cells4G) || 0;
   const c5G = Number(config?.cells5G) || 0;
-  const totalCellsAllConfig = (c2G + c3G + c4G + c5G) || 1;
+  const totalCellsAllConfig = c2G + c3G + c4G + c5G || 1;
 
   let lastTtId = null;
 
@@ -160,15 +160,17 @@ const extractDataWithNUR = (rawData, config) => {
       const cellsKey = findKey(row, "Total Cells");
       const durationKey =
         findKey(row, "Incident Duration") || findKey(row, "Duration");
-      const weekKey = findKey(row, "Downtime Start Week") || 
-                      findKey(row, "Start Week") || 
-                      findKey(row, "Week", "end") ||
-                      findKey(row, "Week", "close");
-      const dateKey = findKey(row, "Downtime Start") || 
-                      findKey(row, "Start Date") || 
-                      findKey(row, "Start", "end") || 
-                      findKey(row, "Date", "end") ||
-                      findKey(row, "Date", "close");
+      const weekKey =
+        findKey(row, "Downtime Start Week") ||
+        findKey(row, "Start Week") ||
+        findKey(row, "Week", "end") ||
+        findKey(row, "Week", "close");
+      const dateKey =
+        findKey(row, "Downtime Start") ||
+        findKey(row, "Start Date") ||
+        findKey(row, "Start", "end") ||
+        findKey(row, "Date", "end") ||
+        findKey(row, "Date", "close");
       const officeKey = findKey(row, "Office") || findKey(row, "SC Office");
       const ozKey = findKey(row, "Operation Zone") || findKey(row, "OZ");
 
@@ -176,11 +178,15 @@ const extractDataWithNUR = (rawData, config) => {
       let configCells = 0;
       const techUpper = technology.toUpperCase();
       let detectedTech = null;
-      
+
       if (techUpper.includes("2G") || techUpper.includes("GSM")) {
         configCells = c2G;
         detectedTech = "2G";
-      } else if (techUpper.includes("3G") || techUpper.includes("UMTS") || techUpper.includes("WCDMA")) {
+      } else if (
+        techUpper.includes("3G") ||
+        techUpper.includes("UMTS") ||
+        techUpper.includes("WCDMA")
+      ) {
         configCells = c3G;
         detectedTech = "3G";
       } else if (techUpper.includes("4G") || techUpper.includes("LTE")) {
@@ -197,7 +203,9 @@ const extractDataWithNUR = (rawData, config) => {
 
       // Debugging: Log first few rows to help identify issues
       if (rawData.indexOf(row) < 5) {
-        console.log(`Row Debug: TechCol="${techKey}", Val="${technology}", Detected="${detectedTech}", Cells=${configCells}`);
+        console.log(
+          `Row Debug: TechCol="${techKey}", Val="${technology}", Detected="${detectedTech}", Cells=${configCells}`,
+        );
       }
 
       const totalCellsNUR = Number(row[cellsKey]) || 0;
@@ -207,11 +215,17 @@ const extractDataWithNUR = (rawData, config) => {
       const NUR =
         configCells > 0 ? (100000 * Nx) / (configCells * 7 * 24 * 60) : 0;
       const CNUR =
-        (totalCellsAllConfig > 0 && !isNaN(configCells)) ? (NUR * configCells) / totalCellsAllConfig : 0;
+        totalCellsAllConfig > 0 && !isNaN(configCells)
+          ? (NUR * configCells) / totalCellsAllConfig
+          : 0;
 
       // Monthly NUR Calculation (using 30 days)
-      const NURMonthly = configCells > 0 ? (100000 * Nx) / (configCells * 30 * 24 * 60) : 0;
-      const CNURMonthly = (totalCellsAllConfig > 0 && !isNaN(configCells)) ? (NURMonthly * configCells) / totalCellsAllConfig : 0;
+      const NURMonthly =
+        configCells > 0 ? (100000 * Nx) / (configCells * 30 * 24 * 60) : 0;
+      const CNURMonthly =
+        totalCellsAllConfig > 0 && !isNaN(configCells)
+          ? (NURMonthly * configCells) / totalCellsAllConfig
+          : 0;
 
       let weekStr = "W01";
       let dayName = "Unknown";
@@ -239,8 +253,21 @@ const extractDataWithNUR = (rawData, config) => {
 
       let monthStr = "Unknown";
       if (rawDate) {
-          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          monthStr = `${monthNames[rawDate.getMonth()]}-${rawDate.getFullYear()}`;
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        monthStr = `${monthNames[rawDate.getMonth()]}-${rawDate.getFullYear()}`;
       }
 
       if (weekKey && row[weekKey]) {
@@ -276,27 +303,35 @@ const extractDataWithNUR = (rawData, config) => {
         sOZ = config.ozMapping[sCode];
       }
 
-      let idKey = Object.keys(row).find(k => {
+      let idKey = Object.keys(row).find((k) => {
         const lower = k.trim().toLowerCase();
         return [
-            "number", "incident number", "ticket number", "fault number", 
-            "incident id", "ticket id", "ticket no", "incident no", "alarm id"
+          "number",
+          "incident number",
+          "ticket number",
+          "fault number",
+          "incident id",
+          "ticket id",
+          "ticket no",
+          "incident no",
+          "alarm id",
         ].includes(lower);
       });
 
       if (!idKey) {
-        idKey = findKey(row, "Incident") || 
-                findKey(row, "Ticket") || 
-                findKey(row, "Alarm");
+        idKey =
+          findKey(row, "Incident") ||
+          findKey(row, "Ticket") ||
+          findKey(row, "Alarm");
       }
 
       let ttId = idKey ? String(row[idKey] || "").trim() : null;
 
       // Inherit TT ID from the previous row if current is empty (handles merged cells in Excel)
       if (ttId && ttId !== "null" && ttId !== "") {
-          lastTtId = ttId;
+        lastTtId = ttId;
       } else if (lastTtId) {
-          ttId = lastTtId;
+        ttId = lastTtId;
       }
 
       return {
@@ -386,7 +421,9 @@ const NURDashboard = ({ config, data, setData }) => {
 
   useEffect(() => {
     if (filteredData.length > 0) {
-      const uniqueTTs = Array.from(new Set(filteredData.map(d => d.ttId).filter(Boolean)));
+      const uniqueTTs = Array.from(
+        new Set(filteredData.map((d) => d.ttId).filter(Boolean)),
+      );
       console.log(`--- Dashboard Debug: ${selectedWeek} ---`);
       console.log(`Unique TT IDs (${uniqueTTs.length}):`, uniqueTTs);
       console.log(`Total data rows:`, filteredData.length);
@@ -405,8 +442,8 @@ const NURDashboard = ({ config, data, setData }) => {
         expectedClosure: "--",
       };
 
-    const totalTx = filteredData.some(d => d.ttId) 
-      ? new Set(filteredData.map(d => d.ttId).filter(Boolean)).size 
+    const totalTx = filteredData.some((d) => d.ttId)
+      ? new Set(filteredData.map((d) => d.ttId).filter(Boolean)).size
       : filteredData.length;
 
     const totalCNUR = filteredData.reduce((acc, curr) => acc + curr.CNUR, 0);
@@ -494,7 +531,7 @@ const NURDashboard = ({ config, data, setData }) => {
       else if (tech.includes("3G") || tech.includes("UMTS")) network = "3G";
       else if (tech.includes("4G") || tech.includes("LTE")) network = "4G";
       else if (tech.includes("5G") || tech.includes("NR")) network = "5G";
-      
+
       if (network) {
         dateMap[d][network].cnur += row.CNUR;
         dateMap[d][network].ttSet.add(ttIdentifier);
@@ -503,14 +540,16 @@ const NURDashboard = ({ config, data, setData }) => {
       }
     });
 
-    return Object.values(dateMap).map(day => ({
+    return Object.values(dateMap)
+      .map((day) => ({
         ...day,
         "2G": { cnur: day["2G"].cnur, tts: day["2G"].ttSet.size },
         "3G": { cnur: day["3G"].cnur, tts: day["3G"].ttSet.size },
         "4G": { cnur: day["4G"].cnur, tts: day["4G"].ttSet.size },
         "5G": { cnur: day["5G"].cnur, tts: day["5G"].ttSet.size },
-        total: { cnur: day.total.cnur, tts: day.total.ttSet.size }
-    })).sort((a, b) => a.rawDate - b.rawDate);
+        total: { cnur: day.total.cnur, tts: day.total.ttSet.size },
+      }))
+      .sort((a, b) => a.rawDate - b.rawDate);
   }, [filteredData, isDataLoaded]);
 
   const tableTotals = useMemo(() => {
@@ -555,32 +594,49 @@ const NURDashboard = ({ config, data, setData }) => {
   const monthlyStats = useMemo(() => {
     if (!isDataLoaded) return [];
     const monthMap = {};
-    processedData.forEach(row => {
-        const m = row.month;
-        if (!monthMap[m]) {
-            monthMap[m] = {
-                month: m,
-                totalCNUR: 0,
-                '2G': 0,
-                '3G': 0,
-                '4G': 0,
-                '5G': 0,
-                rawDate: row.rawDate // for sorting
-            };
-        }
-        monthMap[m].totalCNUR += row.CNURMonthly;
-        const tech = row.parsedTech.toUpperCase();
-        if (tech.includes("2G") || tech.includes("GSM")) monthMap[m]['2G'] += row.CNURMonthly;
-        else if (tech.includes("3G") || tech.includes("UMTS")) monthMap[m]['3G'] += row.CNURMonthly;
-        else if (tech.includes("4G") || tech.includes("LTE")) monthMap[m]['4G'] += row.CNURMonthly;
-        else if (tech.includes("5G") || tech.includes("NR")) monthMap[m]['5G'] += row.CNURMonthly;
+    processedData.forEach((row) => {
+      const m = row.month;
+      if (!monthMap[m]) {
+        monthMap[m] = {
+          month: m,
+          totalCNUR: 0,
+          "2G": 0,
+          "3G": 0,
+          "4G": 0,
+          "5G": 0,
+          rawDate: row.rawDate, // for sorting
+        };
+      }
+      monthMap[m].totalCNUR += row.CNURMonthly;
+      const tech = row.parsedTech.toUpperCase();
+      if (tech.includes("2G") || tech.includes("GSM"))
+        monthMap[m]["2G"] += row.CNURMonthly;
+      else if (tech.includes("3G") || tech.includes("UMTS"))
+        monthMap[m]["3G"] += row.CNURMonthly;
+      else if (tech.includes("4G") || tech.includes("LTE"))
+        monthMap[m]["4G"] += row.CNURMonthly;
+      else if (tech.includes("5G") || tech.includes("NR"))
+        monthMap[m]["5G"] += row.CNURMonthly;
     });
     return Object.values(monthMap).sort((a, b) => {
-        const [mA, yA] = a.month.split('-');
-        const [mB, yB] = b.month.split('-');
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        if (yA !== yB) return yA - yB;
-        return months.indexOf(mA) - months.indexOf(mB);
+      const [mA, yA] = a.month.split("-");
+      const [mB, yB] = b.month.split("-");
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      if (yA !== yB) return yA - yB;
+      return months.indexOf(mA) - months.indexOf(mB);
     });
   }, [processedData, isDataLoaded]);
 
@@ -666,20 +722,20 @@ const NURDashboard = ({ config, data, setData }) => {
         // If we have a fixed list from DB, we only add if it's not strictly filtered
         // OR if there's no OZ filter, we keep the DB list as is.
         if (config.officesList && config.officesList.length > 0) return;
-        officeMap[off] = { 
-          name: off, 
-          cnur: 0, 
-          target: config.dailyCNURTarget || 1.5 
+        officeMap[off] = {
+          name: off,
+          cnur: 0,
+          target: config.dailyCNURTarget || 1.5,
         };
       }
       officeMap[off].cnur += row.CNUR;
     });
 
     let finalData = Object.values(officeMap);
-    
+
     // If an OZ is selected, only show offices that actually have data (correlated)
     if (selectedOZ !== "All") {
-      finalData = finalData.filter(d => d.cnur > 0);
+      finalData = finalData.filter((d) => d.cnur > 0);
     }
 
     return finalData.sort((a, b) => b.cnur - a.cnur);
@@ -719,11 +775,13 @@ const NURDashboard = ({ config, data, setData }) => {
     const statsMap = {};
     let totalCNUR = 0;
 
-    const areaKey = filteredData.length > 0 ? findKey(filteredData[0], "Area") : null;
-    const respKey = filteredData.length > 0 ? (
-        findKey(filteredData[0], "Action OGS Responsible") || 
-        findKey(filteredData[0], "Responsible")
-    ) : null;
+    const areaKey =
+      filteredData.length > 0 ? findKey(filteredData[0], "Area") : null;
+    const respKey =
+      filteredData.length > 0
+        ? findKey(filteredData[0], "Action OGS Responsible") ||
+          findKey(filteredData[0], "Responsible")
+        : null;
 
     filteredData.forEach((row) => {
       let category = areaKey ? String(row[areaKey] || "Other").trim() : "Other";
@@ -879,9 +937,12 @@ const NURDashboard = ({ config, data, setData }) => {
                     : "1px solid var(--glass-border)",
                 background:
                   selectedWeek === "All"
-                    ? (config.theme === 'orange' ? "linear-gradient(135deg, #ff7900, #ffb366)" : "linear-gradient(135deg, var(--accent), #8b5cf6)")
+                    ? config.theme === "orange"
+                      ? "linear-gradient(135deg, #ff7900, #ffb366)"
+                      : "linear-gradient(135deg, var(--accent), #8b5cf6)"
                     : "transparent",
-                color: selectedWeek === "All" ? "#fff" : "var(--text-secondary)",
+                color:
+                  selectedWeek === "All" ? "#fff" : "var(--text-secondary)",
                 fontWeight: selectedWeek === "All" ? 600 : 400,
               }}
             >
@@ -955,9 +1016,12 @@ const NURDashboard = ({ config, data, setData }) => {
                       : "1px solid var(--glass-border)",
                   background:
                     selectedOZ === "All"
-                      ? (config.theme === 'orange' ? "linear-gradient(135deg, #ff7900, #ffb366)" : "linear-gradient(135deg, var(--accent), #8b5cf6)")
+                      ? config.theme === "orange"
+                        ? "linear-gradient(135deg, #ff7900, #ffb366)"
+                        : "linear-gradient(135deg, var(--accent), #8b5cf6)"
                       : "transparent",
-                  color: selectedOZ === "All" ? "#fff" : "var(--text-secondary)",
+                  color:
+                    selectedOZ === "All" ? "#fff" : "var(--text-secondary)",
                   fontWeight: selectedOZ === "All" ? 600 : 400,
                 }}
               >
@@ -1201,7 +1265,8 @@ const NURDashboard = ({ config, data, setData }) => {
                   </thead>
                   <tbody>
                     {dailyTableData.map((row, i) => {
-                      const isExceed = row.total.cnur > (config.dailyCNURTarget || 1.5);
+                      const isExceed =
+                        row.total.cnur > (config.dailyCNURTarget || 1.5);
                       return (
                         <tr
                           key={i}
@@ -1645,7 +1710,7 @@ const NURDashboard = ({ config, data, setData }) => {
                         backgroundColor: "var(--panel-bg)",
                         border: "1px solid var(--panel-border)",
                         borderRadius: "8px",
-                        color: "var(--text-primary)"
+                        color: "var(--text-primary)",
                       }}
                     />
                     <Area
@@ -1654,11 +1719,11 @@ const NURDashboard = ({ config, data, setData }) => {
                       stroke={themeSecondary}
                       fillOpacity={1}
                       fill="url(#colorCNUR)"
-                      label={{ 
-                        position: 'top', 
-                        fill: 'var(--text-secondary)', 
+                      label={{
+                        position: "top",
+                        fill: "var(--text-secondary)",
                         fontSize: 10,
-                        formatter: (val) => val.toFixed(3)
+                        formatter: (val) => val.toFixed(3),
                       }}
                     />
                   </AreaChart>
@@ -1705,7 +1770,7 @@ const NURDashboard = ({ config, data, setData }) => {
                         backgroundColor: "var(--panel-bg)",
                         border: "1px solid var(--panel-border)",
                         borderRadius: "8px",
-                        color: "var(--text-primary)"
+                        color: "var(--text-primary)",
                       }}
                       formatter={(value) =>
                         typeof value === "number" ? value.toFixed(3) : value
@@ -1717,11 +1782,11 @@ const NURDashboard = ({ config, data, setData }) => {
                       name="CNUR Impact"
                       radius={[4, 4, 0, 0]}
                     >
-                      <LabelList 
-                        dataKey="cnur" 
-                        position="top" 
-                        fill="var(--text-secondary)" 
-                        fontSize={9} 
+                      <LabelList
+                        dataKey="cnur"
+                        position="top"
+                        fill="var(--text-secondary)"
+                        fontSize={9}
                         formatter={(val) => val.toFixed(3)}
                       />
                       {officeChartData.map((entry, index) => (
@@ -2015,7 +2080,7 @@ const NURDashboard = ({ config, data, setData }) => {
                         backgroundColor: "var(--panel-bg)",
                         border: "1px solid var(--panel-border)",
                         borderRadius: "8px",
-                        color: "var(--text-primary)"
+                        color: "var(--text-primary)",
                       }}
                       formatter={(value) => value.toFixed(3)}
                     />
@@ -2241,64 +2306,161 @@ const NURDashboard = ({ config, data, setData }) => {
 
       {/* Monthly NUR Analysis Section */}
       {isDataLoaded && (
-        <div style={{ marginTop: "4rem", paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-            <div style={{ background: 'var(--accent-bg)', padding: '0.75rem', borderRadius: '12px' }}>
+        <div
+          style={{
+            marginTop: "4rem",
+            paddingTop: "2rem",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              marginBottom: "2rem",
+            }}
+          >
+            <div
+              style={{
+                background: "var(--accent-bg)",
+                padding: "0.75rem",
+                borderRadius: "12px",
+              }}
+            >
               <Calendar size={24} color="var(--accent)" />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.75rem', margin: 0 }} className="text-gradient">Monthly NUR Analysis</h2>
-              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Aggregated performance metrics on a monthly basis (30-day normalization).</p>
+              <h2
+                style={{ fontSize: "1.75rem", margin: 0 }}
+                className="text-gradient"
+              >
+                Monthly NUR Analysis
+              </h2>
+              <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+                Aggregated performance metrics on a monthly basis (30-day
+                normalization).
+              </p>
             </div>
           </div>
 
-          <div className="dashboard-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+          <div
+            className="dashboard-grid"
+            style={{ gridTemplateColumns: "1.5fr 1fr" }}
+          >
             {/* Monthly Trend Chart */}
-            <div className="glass-panel" style={{ padding: '2rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+              <h3
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
                 <Activity size={20} color="var(--accent)" />
                 Monthly CNUR Trend
               </h3>
-              <div style={{ height: '400px' }}>
+              <div style={{ height: "400px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyStats}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" stroke="var(--text-secondary)" fontSize={12} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="rgba(255,255,255,0.05)"
+                    />
+                    <XAxis
+                      dataKey="month"
+                      stroke="var(--text-secondary)"
+                      fontSize={12}
+                    />
                     <YAxis stroke="var(--text-secondary)" fontSize={12} />
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(15, 23, 42, 0.9)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "8px",
+                      }}
                     />
                     <Legend />
-                    <Bar dataKey="totalCNUR" name="Total CNUR" fill="var(--accent)" radius={[4, 4, 0, 0]} barSize={40}>
-                      <LabelList dataKey="totalCNUR" position="top" fill="var(--text-secondary)" fontSize={10} formatter={(val) => val.toFixed(3)} />
+                    <Bar
+                      dataKey="totalCNUR"
+                      name="Total CNUR"
+                      fill="var(--accent)"
+                      radius={[4, 4, 0, 0]}
+                      barSize={40}
+                    >
+                      <LabelList
+                        dataKey="totalCNUR"
+                        position="top"
+                        fill="var(--text-secondary)"
+                        fontSize={10}
+                        formatter={(val) => val.toFixed(3)}
+                      />
                     </Bar>
-                    <Line type="monotone" dataKey="totalCNUR" name="Trend" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6' }} />
+                    <Line
+                      type="monotone"
+                      dataKey="totalCNUR"
+                      name="Trend"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={{ fill: "#8b5cf6" }}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Monthly Tech Breakdown */}
-            <div className="glass-panel" style={{ padding: '2rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+              <h3
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
                 <BarChart3 size={20} color="var(--accent)" />
                 Monthly NUR per Tech
               </h3>
-              <div style={{ height: '400px' }}>
+              <div style={{ height: "400px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyStats} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis type="number" stroke="var(--text-secondary)" fontSize={12} />
-                    <YAxis dataKey="month" type="category" stroke="var(--text-secondary)" fontSize={12} width={80} />
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="rgba(255,255,255,0.05)"
+                    />
+                    <XAxis
+                      type="number"
+                      stroke="var(--text-secondary)"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      dataKey="month"
+                      type="category"
+                      stroke="var(--text-secondary)"
+                      fontSize={12}
+                      width={80}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(15, 23, 42, 0.9)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "8px",
+                      }}
                     />
                     <Legend />
                     <Bar dataKey="2G" stackId="a" fill="#3b82f6" />
                     <Bar dataKey="3G" stackId="a" fill="#10b981" />
                     <Bar dataKey="4G" stackId="a" fill="#f59e0b" />
                     <Bar dataKey="5G" stackId="a" fill="#ef4444">
-                      <LabelList dataKey="totalCNUR" position="right" fill="var(--text-secondary)" fontSize={10} formatter={(val) => val.toFixed(3)} />
+                      <LabelList
+                        dataKey="totalCNUR"
+                        position="right"
+                        fill="var(--text-secondary)"
+                        fontSize={10}
+                        formatter={(val) => val.toFixed(3)}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
