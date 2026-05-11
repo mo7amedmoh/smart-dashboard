@@ -334,6 +334,9 @@ const extractDataWithNUR = (rawData, config) => {
         ttId = lastTtId;
       }
 
+      const solutionKey = findKey(row, "Solution") || findKey(row, "Resolution") || findKey(row, "Action Taken");
+      const solution = solutionKey ? String(row[solutionKey] || "").trim() : "";
+
       return {
         ...row,
         ttId,
@@ -343,6 +346,7 @@ const extractDataWithNUR = (rawData, config) => {
         siteName: sName,
         office: sOffice,
         oz: sOZ,
+        solution,
         week: weekStr,
         month: monthStr,
         dayOfWeek: dayName,
@@ -581,6 +585,7 @@ const NURDashboard = ({ config, data, setData }) => {
           incidents: 0,
           duration: 0,
           cnur: 0,
+          solution: row.solution || "",
         };
       siteMap[s].incidents += 1;
       siteMap[s].duration += row.parsedDurationMins || 0;
@@ -594,7 +599,12 @@ const NURDashboard = ({ config, data, setData }) => {
   const monthlyStats = useMemo(() => {
     if (!isDataLoaded) return [];
     const monthMap = {};
-    processedData.forEach((row) => {
+    
+    const ozFilteredData = selectedOZ === "All" 
+      ? processedData 
+      : processedData.filter(d => d.oz === selectedOZ);
+
+    ozFilteredData.forEach((row) => {
       const m = row.month;
       if (!monthMap[m]) {
         monthMap[m] = {
@@ -638,7 +648,7 @@ const NURDashboard = ({ config, data, setData }) => {
       if (yA !== yB) return yA - yB;
       return months.indexOf(mA) - months.indexOf(mB);
     });
-  }, [processedData, isDataLoaded]);
+  }, [processedData, isDataLoaded, selectedOZ]);
 
   const topRepeatedSites = useMemo(() => {
     if (!isDataLoaded) return [];
@@ -744,7 +754,13 @@ const NURDashboard = ({ config, data, setData }) => {
   const trendData = useMemo(() => {
     if (!isDataLoaded) return [];
     const weekMap = {};
-    filteredData.forEach((row) => {
+    
+    // For the trend chart, we want to see all weeks but respect the OZ filter
+    const ozFilteredData = selectedOZ === "All" 
+      ? processedData 
+      : processedData.filter(d => d.oz === selectedOZ);
+
+    ozFilteredData.forEach((row) => {
       const w = row.week;
       if (!weekMap[w])
         weekMap[w] = { name: w, "2G": 0, "3G": 0, "4G": 0, CNUR: 0 };
@@ -758,7 +774,7 @@ const NURDashboard = ({ config, data, setData }) => {
       weekMap[w].CNUR += row.CNUR;
     });
     return Object.values(weekMap).sort((a, b) => a.name.localeCompare(b.name));
-  }, [filteredData, isDataLoaded]);
+  }, [processedData, isDataLoaded, selectedOZ]);
 
   const drillDownData = useMemo(() => {
     if (!drillDownDay || !isDataLoaded) return [];
@@ -1861,7 +1877,7 @@ const NURDashboard = ({ config, data, setData }) => {
                       <th style={{ padding: "6px 8px" }}>Site Code</th>
                       <th style={{ padding: "6px 8px" }}>Site Name</th>
                       <th style={{ padding: "6px 8px" }}>CNUR Impact</th>
-                      <th style={{ padding: "6px 8px" }}>Comment</th>
+                      <th style={{ padding: "6px 8px" }}>Solution / Resolution</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1888,25 +1904,13 @@ const NURDashboard = ({ config, data, setData }) => {
                           >
                             {site.cnur.toFixed(3)}
                           </td>
-                          <td style={{ padding: "4px 8px" }}>
-                            <input
-                              type="text"
-                              value={siteComments[site.site] || ""}
-                              onChange={(e) =>
-                                handleCommentChange(site.site, e.target.value)
-                              }
-                              placeholder="Add comment..."
-                              style={{
-                                background: "rgba(0,0,0,0.2)",
-                                border: "1px solid var(--glass-border)",
-                                borderRadius: "4px",
-                                padding: "4px 8px",
-                                color: "white",
-                                width: "100%",
-                                outline: "none",
-                                fontSize: "0.85rem",
-                              }}
-                            />
+                          <td 
+                            style={{ padding: "6px 8px", fontSize: "0.75rem", maxWidth: "250px" }}
+                            title={site.solution}
+                          >
+                            {site.solution && site.solution.length > 60 
+                              ? site.solution.substring(0, 60) + "..." 
+                              : site.solution || "--"}
                           </td>
                         </tr>
                       ))
@@ -2065,13 +2069,27 @@ const NURDashboard = ({ config, data, setData }) => {
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
-                      outerRadius={100}
+                      outerRadius={90}
                       paddingAngle={5}
                       dataKey="value"
                       nameKey="name"
-                      label={({ name, percentage }) =>
-                        `${name} (${percentage.toFixed(1)}%)`
-                      }
+                      labelLine={true}
+                      label={({ name, percentage, cx, cy, midAngle, outerRadius, x, y }) => {
+                        if (percentage < 3) return null; // Avoid crowding for tiny slices
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="var(--text-secondary)"
+                            textAnchor={x > cx ? "start" : "end"}
+                            dominantBaseline="central"
+                            fontSize="10"
+                            fontWeight="500"
+                          >
+                            {`${name} (${percentage.toFixed(1)}%)`}
+                          </text>
+                        );
+                      }}
                     >
                       {contributorStats.map((entry, index) => (
                         <Cell
