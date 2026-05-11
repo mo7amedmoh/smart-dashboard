@@ -169,7 +169,8 @@ const extractDataWithNUR = (rawData, config) => {
                       findKey(row, "Start", "end") || 
                       findKey(row, "Date", "end") ||
                       findKey(row, "Date", "close");
-      const officeKey = findKey(row, "Office") || findKey(row, "Operation Zone") || findKey(row, "OZ");
+      const officeKey = findKey(row, "Office") || findKey(row, "SC Office");
+      const ozKey = findKey(row, "Operation Zone") || findKey(row, "OZ");
 
       const technology = String(row[techKey] || "").trim();
       let configCells = 0;
@@ -270,8 +271,8 @@ const extractDataWithNUR = (rawData, config) => {
       if (config?.officeMapping && config.officeMapping[sCode]) {
         sOffice = config.officeMapping[sCode];
       }
-      let sOZ = "Other";
-      if (config?.ozMapping && config.ozMapping[sCode]) {
+      let sOZ = ozKey ? String(row[ozKey] || "Other").trim() : "Other";
+      if (sOZ === "Other" && config?.ozMapping && config.ozMapping[sCode]) {
         sOZ = config.ozMapping[sCode];
       }
 
@@ -347,10 +348,9 @@ const NURDashboard = ({ config, data, setData }) => {
   }, [processedData]);
 
   const availableOZs = useMemo(() => {
-    if (config.ozList && config.ozList.length > 0) return config.ozList;
     const ozs = new Set(processedData.map((d) => d.oz).filter(Boolean));
     return Array.from(ozs).sort();
-  }, [processedData, config]);
+  }, [processedData]);
 
   useEffect(() => {
     if (
