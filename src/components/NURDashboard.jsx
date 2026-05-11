@@ -776,7 +776,11 @@ const NURDashboard = ({ config, data, setData }) => {
     let totalCNUR = 0;
 
     const areaKey =
-      filteredData.length > 0 ? findKey(filteredData[0], "Area") : null;
+      filteredData.length > 0
+        ? Object.keys(filteredData[0]).find(
+            (k) => k.toLowerCase().replace(/[\s_]/g, "") === "area",
+          )
+        : null;
     const respKey =
       filteredData.length > 0
         ? findKey(filteredData[0], "Action OGS Responsible") ||
