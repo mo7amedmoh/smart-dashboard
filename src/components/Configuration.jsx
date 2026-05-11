@@ -34,10 +34,10 @@ const Configuration = ({ config, setConfig }) => {
             const clean = k.toLowerCase().replace(/[\s_]/g, "");
             return clean.includes("name");
           });
-          const officeKey = keys.find((k) => {
+          const officeKey = keys.find((k) => k.toLowerCase().replace(/[\s_]/g, "").includes("office")) || 
+                            keys.find((k) => {
             const clean = k.toLowerCase().replace(/[\s_]/g, "");
             return (
-              clean.includes("office") ||
               clean.includes("zone") ||
               clean.includes("area") ||
               clean === "oz" ||
@@ -129,10 +129,10 @@ const Configuration = ({ config, setConfig }) => {
           const clean = k.toLowerCase().replace(/[\s_]/g, "");
           return clean.includes("name");
         });
-        const officeKey = keys.find((k) => {
+        const officeKey = keys.find((k) => k.toLowerCase().replace(/[\s_]/g, "").includes("office")) || 
+                          keys.find((k) => {
           const clean = k.toLowerCase().replace(/[\s_]/g, "");
           return (
-            clean.includes("office") ||
             clean.includes("zone") ||
             clean.includes("area") ||
             clean === "oz" ||

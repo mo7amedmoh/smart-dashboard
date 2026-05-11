@@ -169,7 +169,7 @@ const extractDataWithNUR = (rawData, config) => {
                       findKey(row, "Start", "end") || 
                       findKey(row, "Date", "end") ||
                       findKey(row, "Date", "close");
-      const officeKey = findKey(row, "Operation Zone") || findKey(row, "Office") || findKey(row, "OZ");
+      const officeKey = findKey(row, "Office") || findKey(row, "Operation Zone") || findKey(row, "OZ");
 
       const technology = String(row[techKey] || "").trim();
       let configCells = 0;
@@ -673,7 +673,7 @@ const NURDashboard = ({ config, data, setData }) => {
   const trendData = useMemo(() => {
     if (!isDataLoaded) return [];
     const weekMap = {};
-    processedData.forEach((row) => {
+    filteredData.forEach((row) => {
       const w = row.week;
       if (!weekMap[w])
         weekMap[w] = { name: w, "2G": 0, "3G": 0, "4G": 0, CNUR: 0 };
@@ -687,7 +687,7 @@ const NURDashboard = ({ config, data, setData }) => {
       weekMap[w].CNUR += row.CNUR;
     });
     return Object.values(weekMap).sort((a, b) => a.name.localeCompare(b.name));
-  }, [processedData, isDataLoaded]);
+  }, [filteredData, isDataLoaded]);
 
   const drillDownData = useMemo(() => {
     if (!drillDownDay || !isDataLoaded) return [];
@@ -704,11 +704,13 @@ const NURDashboard = ({ config, data, setData }) => {
     const statsMap = {};
     let totalCNUR = 0;
 
-    filteredData.forEach((row) => {
-      const areaKey = findKey(row, "Area");
-      const respKey =
-        findKey(row, "Action OGS Responsible") || findKey(row, "Responsible");
+    const areaKey = filteredData.length > 0 ? findKey(filteredData[0], "Area") : null;
+    const respKey = filteredData.length > 0 ? (
+        findKey(filteredData[0], "Action OGS Responsible") || 
+        findKey(filteredData[0], "Responsible")
+    ) : null;
 
+    filteredData.forEach((row) => {
       let category = areaKey ? String(row[areaKey] || "Other").trim() : "Other";
       const respVal = respKey
         ? String(row[respKey] || "")
