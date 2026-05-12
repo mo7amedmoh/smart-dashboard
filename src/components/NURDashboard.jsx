@@ -2068,14 +2068,20 @@ const NURDashboard = ({ config, data, setData }) => {
                       data={contributorStats}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={50}
+                      outerRadius={70}
                       paddingAngle={5}
                       dataKey="value"
                       nameKey="name"
-                      labelLine={true}
-                      label={({ name, percentage, cx, cy, midAngle, outerRadius, x, y }) => {
-                        if (percentage < 3) return null; // Avoid crowding for tiny slices
+                      labelLine={{ stroke: 'var(--text-secondary)', strokeWidth: 1.5 }}
+                      label={({ name, percentage, cx, cy, midAngle, outerRadius }) => {
+                        const RADIAN = Math.PI / 180;
+                        // Push labels significantly further out to create longer leading lines
+                        // and avoid overlapping for small slices
+                        const radius = outerRadius + 55; 
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
                         return (
                           <text
                             x={x}
@@ -2083,8 +2089,8 @@ const NURDashboard = ({ config, data, setData }) => {
                             fill="var(--text-secondary)"
                             textAnchor={x > cx ? "start" : "end"}
                             dominantBaseline="central"
-                            fontSize="10"
-                            fontWeight="500"
+                            fontSize="11"
+                            fontWeight="700"
                           >
                             {`${name} (${percentage.toFixed(1)}%)`}
                           </text>
