@@ -3,18 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { HardDrive, Activity, Clock, CheckCircle, AlertCircle, MessageSquare, Filter, Download, Info } from 'lucide-react';
 import FileUpload from './FileUpload';
 
-const findKey = (obj, searchStr) => {
-    if (!obj) return null;
-    const keys = Object.keys(obj);
-    return keys.find(k => k.toLowerCase().includes(searchStr.toLowerCase()));
-};
-
-const getWeekNumber = (date) => {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const startOfYear = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const pastDaysOfYear = (d - startOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + (startOfYear.getUTCDay() + 1)) / 7);
-};
+import { findKey, getWeekNumber, extractHWData } from '../utils/dataUtils';
 
 const NetworkHWDashboard = ({ config, data, setData }) => {
     const [pendingComments, setPendingComments] = useState(() => {
@@ -34,59 +23,7 @@ const NetworkHWDashboard = ({ config, data, setData }) => {
     };
 
     const processedData = useMemo(() => {
-        if (!data || !data.length) return [];
-
-        const statusKey = findKey(data[0], 'status');
-        const openTimeKey = findKey(data[0], 'open time') || findKey(data[0], 'opened') || findKey(data[0], 'created') || findKey(data[0], 'date');
-        const closeTimeKey = findKey(data[0], 'close time') || findKey(data[0], 'closed') || findKey(data[0], 'resolved');
-        const siteNameKey = findKey(data[0], 'site name') || findKey(data[0], 'site');
-        const siteCodeKey = findKey(data[0], 'site code') || findKey(data[0], 'code') || findKey(data[0], 'site id') || findKey(data[0], 'node');
-        const actionKey = findKey(data[0], 'action');
-        const idKey = findKey(data[0], 'id') || findKey(data[0], 'ticket') || findKey(data[0], 'ref');
-
-        const parseDate = (val) => {
-            if (!val) return null;
-            if (typeof val === 'number') return new Date((val - 25569) * 86400 * 1000);
-            const d = new Date(val);
-            return isNaN(d.getTime()) ? null : d;
-        };
-
-        return data.map((row, index) => {
-            const rawStatus = String(row[statusKey] || '').trim();
-            const statusLower = rawStatus.toLowerCase();
-            
-            let status = 'Other';
-            if (statusLower.includes('assign')) status = 'Assigned';
-            else if (statusLower.includes('pend')) status = 'Pending';
-            else if (statusLower.includes('close') || statusLower.includes('resolve')) status = 'Closed';
-
-            const openTime = parseDate(row[openTimeKey]);
-            const closeTime = parseDate(row[closeTimeKey]);
-            
-            const openWeek = openTime ? `W${getWeekNumber(openTime)}` : null;
-            const closeWeek = (status === 'Closed' && closeTime) ? `W${getWeekNumber(closeTime)}` : null;
-            const id = idKey ? String(row[idKey]) : `row-${index}`;
-            const sCode = siteCodeKey ? String(row[siteCodeKey] || '').trim().toUpperCase() : '';
-            
-            let sName = row[siteNameKey] || 'Unknown';
-            if (config?.siteDatabase && config.siteDatabase[sCode]) {
-                sName = config.siteDatabase[sCode];
-            }
-
-            return {
-                ...row,
-                id,
-                status,
-                rawStatus,
-                openTime,
-                closeTime,
-                openWeek,
-                closeWeek,
-                siteCode: sCode,
-                siteName: sName,
-                action: row[actionKey] || 'N/A'
-            };
-        });
+        return extractHWData(data, config);
     }, [data, config]);
 
     const stats = useMemo(() => {

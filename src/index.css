@@ -340,6 +340,97 @@ button {
   box-shadow: 0 0 15px var(--accent-glow);
 }
 
+/* Dropdown Navigation */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 240px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow);
+  padding: 0.6rem;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-dropdown:hover .dropdown-content,
+.nav-dropdown.active .dropdown-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  text-align: left;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.dropdown-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.05);
+  padding-left: 1.15rem;
+}
+
+.dropdown-item.active {
+  color: var(--text-primary);
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  padding-left: 1.15rem;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--accent);
+  transition: height 0.2s ease;
+  border-radius: 0 4px 4px 0;
+}
+
+.dropdown-item:hover::before,
+.dropdown-item.active::before {
+  height: 60%;
+}
+
+.nav-link .chevron {
+  transition: transform 0.3s ease;
+}
+
+.nav-dropdown:hover .chevron {
+  transform: rotate(180deg);
+}
+
 /* Layout Utilities */
 .app-container {
   display: flex;

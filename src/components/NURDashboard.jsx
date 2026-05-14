@@ -35,73 +35,13 @@ import {
 } from "recharts";
 import FileUpload from "./FileUpload";
 
-// Helper to calculate week number starting on Sunday
-const getWeekNumberStartingSunday = (date) => {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
-  const startOfYear = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const pastDaysOfYear = (d - startOfYear) / 86400000;
-  const firstDayOfYear = startOfYear.getUTCDay(); // 0 is Sunday
-  return Math.ceil((pastDaysOfYear + firstDayOfYear + 1) / 7);
-};
-
-// Helper to find column keys robustly with optional exclusions
-const findKey = (obj, searchStr, excludeStr = null) => {
-  if (!obj) return null;
-  const keys = Object.keys(obj);
-  return keys.find((k) => {
-    const lowKey = k.toLowerCase();
-    const lowSearch = searchStr.toLowerCase();
-    if (!lowKey.includes(lowSearch)) return false;
-    if (excludeStr && lowKey.includes(excludeStr.toLowerCase())) return false;
-    return true;
-  });
-};
-
-// Parse Excel duration to minutes
-const parseDurationToMins = (val) => {
-  if (val == null) return 0;
-  if (typeof val === "number") {
-    return val * 24 * 60; // Excel decimal fraction of a day
-  }
-  if (typeof val === "string") {
-    const parts = val.split(":");
-    if (parts.length === 3) {
-      return (
-        parseInt(parts[0] || 0, 10) * 60 +
-        parseInt(parts[1] || 0, 10) +
-        parseInt(parts[2] || 0, 10) / 60
-      );
-    } else if (parts.length === 2) {
-      return parseInt(parts[0] || 0, 10) * 60 + parseInt(parts[1] || 0, 10);
-    }
-    const parsed = parseFloat(val);
-    if (!isNaN(parsed)) return parsed;
-  }
-  return 0;
-};
-
-// Parse Excel date
-const parseExcelDate = (val) => {
-  if (val == null) return new Date();
-  if (typeof val === "number") {
-    // Excel serial dates are local times, but the math converts them to UTC timestamps.
-    // We extract the UTC components and construct a local Date to prevent timezone shifting.
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-    return new Date(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      d.getUTCHours(),
-      d.getUTCMinutes(),
-      d.getUTCSeconds(),
-    );
-  }
-  const d = new Date(val);
-  if (!isNaN(d)) return d;
-  return new Date();
-};
+import { 
+  findKey, 
+  parseDurationToMins, 
+  parseExcelDate, 
+  getWeekNumberStartingSunday, 
+  extractDataWithNUR 
+} from "../utils/dataUtils";
 
 const daysOfWeek = [
   "Sunday",
@@ -113,258 +53,8 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const extractDataWithNUR = (rawData, config) => {
-  if (!rawData || !rawData.length) return [];
 
-  const c2G = Number(config?.cells2G) || 0;
-  const c3G = Number(config?.cells3G) || 0;
-  const c4G = Number(config?.cells4G) || 0;
-  const c5G = Number(config?.cells5G) || 0;
-  const totalCellsAllConfig = c2G + c3G + c4G + c5G || 1;
-
-  let lastTtId = null;
-
-  return rawData
-    .map((row) => {
-      // Exclusions Check
-      const blockedKey = findKey(row, "Blocked");
-      const areaKey = findKey(row, "Area");
-      const outageTypeKey = findKey(row, "Outage Type");
-      const fmKey = findKey(row, "Force Majeure");
-
-      const valBlocked = blockedKey
-        ? String(row[blockedKey]).trim().toLowerCase()
-        : "";
-      const valArea = areaKey ? String(row[areaKey]).trim().toLowerCase() : "";
-      const valOutage = outageTypeKey
-        ? String(row[outageTypeKey]).trim().toLowerCase()
-        : "";
-      const valFM = fmKey ? String(row[fmKey]).trim().toLowerCase() : "";
-
-      const isBlocked =
-        valBlocked === "true" || valBlocked === "yes" || valBlocked === "1";
-      const isLL = valArea === "ll";
-      const isVoluntary = valOutage === "voluntary";
-      const isFM = valFM === "true" || valFM === "yes" || valFM === "1";
-
-      if (isBlocked || isLL || isVoluntary || isFM) {
-        return null; // Exclude this row
-      }
-
-      const techKey =
-        findKey(row, "Technology") ||
-        findKey(row, "Primary Affected Service") ||
-        findKey(row, "Affected Item", "Site") ||
-        findKey(row, "Tech") ||
-        findKey(row, "Network");
-      const cellsKey = findKey(row, "Total Cells");
-      const durationKey =
-        findKey(row, "Incident Duration") || findKey(row, "Duration");
-      const weekKey =
-        findKey(row, "Downtime Start Week") ||
-        findKey(row, "Start Week") ||
-        findKey(row, "Week", "end") ||
-        findKey(row, "Week", "close");
-      const dateKey =
-        findKey(row, "Downtime Start") ||
-        findKey(row, "Start Date") ||
-        findKey(row, "Start", "end") ||
-        findKey(row, "Date", "end") ||
-        findKey(row, "Date", "close");
-      const officeKey = findKey(row, "Office") || findKey(row, "SC Office");
-      const ozKey = findKey(row, "Operation Zone") || findKey(row, "OZ");
-
-      const technology = String(row[techKey] || "").trim();
-      let configCells = 0;
-      const techUpper = technology.toUpperCase();
-      let detectedTech = null;
-
-      if (techUpper.includes("2G") || techUpper.includes("GSM")) {
-        configCells = c2G;
-        detectedTech = "2G";
-      } else if (
-        techUpper.includes("3G") ||
-        techUpper.includes("UMTS") ||
-        techUpper.includes("WCDMA")
-      ) {
-        configCells = c3G;
-        detectedTech = "3G";
-      } else if (techUpper.includes("4G") || techUpper.includes("LTE")) {
-        configCells = c4G;
-        detectedTech = "4G";
-      } else if (techUpper.includes("5G") || techUpper.includes("NR")) {
-        configCells = c5G;
-        detectedTech = "5G";
-      }
-
-      if (!technology || technology === "" || technology === "null") {
-        return null;
-      }
-
-      // Debugging: Log first few rows to help identify issues
-      if (rawData.indexOf(row) < 5) {
-        console.log(
-          `Row Debug: TechCol="${techKey}", Val="${technology}", Detected="${detectedTech}", Cells=${configCells}`,
-        );
-      }
-
-      const totalCellsNUR = Number(row[cellsKey]) || 0;
-      const durationMins = parseDurationToMins(row[durationKey]) || 0;
-
-      const Nx = totalCellsNUR * durationMins;
-      const NUR =
-        configCells > 0 ? (100000 * Nx) / (configCells * 7 * 24 * 60) : 0;
-      const CNUR =
-        totalCellsAllConfig > 0 && !isNaN(configCells)
-          ? (NUR * configCells) / totalCellsAllConfig
-          : 0;
-
-      // Monthly NUR Calculation (using 30 days)
-      const NURMonthly =
-        configCells > 0 ? (100000 * Nx) / (configCells * 30 * 24 * 60) : 0;
-      const CNURMonthly =
-        totalCellsAllConfig > 0 && !isNaN(configCells)
-          ? (NURMonthly * configCells) / totalCellsAllConfig
-          : 0;
-
-      let weekStr = "W01";
-      let dayName = "Unknown";
-      let rawDate = null;
-      let dateStr = "Unknown";
-      if (dateKey && row[dateKey]) {
-        rawDate = parseExcelDate(row[dateKey]);
-        dayName = daysOfWeek[rawDate.getDay()];
-        const months = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        dateStr = `${rawDate.getDate()}-${months[rawDate.getMonth()]}`;
-      }
-
-      let monthStr = "Unknown";
-      if (rawDate) {
-        const monthNames = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        monthStr = `${monthNames[rawDate.getMonth()]}-${rawDate.getFullYear()}`;
-      }
-
-      if (weekKey && row[weekKey]) {
-        let w = String(row[weekKey]).replace(/\D/g, "");
-        if (w) weekStr = `W${w.padStart(2, "0")}`;
-        else weekStr = String(row[weekKey]);
-      } else if (rawDate) {
-        const wNum = getWeekNumberStartingSunday(rawDate);
-        weekStr = `W${String(wNum).padStart(2, "0")}`;
-      }
-
-      const siteKey =
-        findKey(row, "Problem Source Sitecode") ||
-        findKey(row, "Site code") ||
-        findKey(row, "Site");
-      const siteNameKey = findKey(row, "Site Name") || findKey(row, "Name");
-
-      const sCode = siteKey
-        ? String(row[siteKey]).trim().toUpperCase()
-        : "Unknown_Site";
-      let sName = siteNameKey ? row[siteNameKey] : "Unknown";
-      let sOffice = officeKey ? row[officeKey] : "Other";
-
-      // Check if uploaded configuration database has a mapping
-      if (config?.siteDatabase && config.siteDatabase[sCode]) {
-        sName = config.siteDatabase[sCode];
-      }
-      if (config?.officeMapping && config.officeMapping[sCode]) {
-        sOffice = config.officeMapping[sCode];
-      }
-      let sOZ = ozKey ? String(row[ozKey] || "Other").trim() : "Other";
-      if (sOZ === "Other" && config?.ozMapping && config.ozMapping[sCode]) {
-        sOZ = config.ozMapping[sCode];
-      }
-
-      let idKey = Object.keys(row).find((k) => {
-        const lower = k.trim().toLowerCase();
-        return [
-          "number",
-          "incident number",
-          "ticket number",
-          "fault number",
-          "incident id",
-          "ticket id",
-          "ticket no",
-          "incident no",
-          "alarm id",
-        ].includes(lower);
-      });
-
-      if (!idKey) {
-        idKey =
-          findKey(row, "Incident") ||
-          findKey(row, "Ticket") ||
-          findKey(row, "Alarm");
-      }
-
-      let ttId = idKey ? String(row[idKey] || "").trim() : null;
-
-      // Inherit TT ID from the previous row if current is empty (handles merged cells in Excel)
-      if (ttId && ttId !== "null" && ttId !== "") {
-        lastTtId = ttId;
-      } else if (lastTtId) {
-        ttId = lastTtId;
-      }
-
-      const solutionKey = findKey(row, "Solution") || findKey(row, "Resolution") || findKey(row, "Action Taken");
-      const solution = solutionKey ? String(row[solutionKey] || "").trim() : "";
-
-      return {
-        ...row,
-        ttId,
-        parsedTech: technology,
-        parsedDurationMins: durationMins,
-        siteCode: sCode,
-        siteName: sName,
-        office: sOffice,
-        oz: sOZ,
-        solution,
-        week: weekStr,
-        month: monthStr,
-        dayOfWeek: dayName,
-        rawDate,
-        dateStr,
-        Nx,
-        NUR,
-        CNUR,
-        NURMonthly,
-        CNURMonthly,
-        configCells,
-      };
-    })
-    .filter(Boolean);
-};
-
-const NURDashboard = ({ config, data, setData }) => {
-  const [selectedWeek, setSelectedWeek] = useState("All");
+const NURDashboard = ({ config, data, setData, selectedWeek, setSelectedWeek }) => {
   const [selectedOZ, setSelectedOZ] = useState("All");
   const [siteComments, setSiteComments] = useState({});
   const [drillDownDay, setDrillDownDay] = useState(null);
@@ -778,10 +468,25 @@ const NURDashboard = ({ config, data, setData }) => {
 
   const drillDownData = useMemo(() => {
     if (!drillDownDay || !isDataLoaded) return [];
-    // Ensure we match using a clean string comparison
     const target = String(drillDownDay).trim();
-    return filteredData
-      .filter((d) => (d.dateStr || "Unknown").trim() === target)
+    const dailyData = filteredData.filter((d) => (d.dateStr || "Unknown").trim() === target);
+    
+    const siteMap = {};
+    dailyData.forEach(d => {
+      const s = d.siteCode || "Unknown";
+      if (!siteMap[s]) {
+        siteMap[s] = {
+          siteCode: s,
+          siteName: d.siteName || "Unknown",
+          parsedDurationMins: 0,
+          CNUR: 0
+        };
+      }
+      siteMap[s].CNUR += d.CNUR;
+      siteMap[s].parsedDurationMins += d.parsedDurationMins || 0;
+    });
+
+    return Object.values(siteMap)
       .sort((a, b) => b.CNUR - a.CNUR)
       .slice(0, 15);
   }, [filteredData, drillDownDay, isDataLoaded]);
@@ -1566,9 +1271,8 @@ const NURDashboard = ({ config, data, setData }) => {
                     <tr>
                       <th style={{ padding: "8px" }}>Site Code</th>
                       <th style={{ padding: "8px" }}>Site Name</th>
-                      <th style={{ padding: "8px" }}>Tech</th>
-                      <th style={{ padding: "8px" }}>Duration</th>
-                      <th style={{ padding: "8px" }}>CNUR Impact</th>
+                      <th style={{ padding: "8px" }}>Total Duration</th>
+                      <th style={{ padding: "8px" }}>Total CNUR Impact</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1584,7 +1288,6 @@ const NURDashboard = ({ config, data, setData }) => {
                             {site.siteCode}
                           </td>
                           <td style={{ padding: "8px" }}>{site.siteName}</td>
-                          <td style={{ padding: "8px" }}>{site.parsedTech}</td>
                           <td style={{ padding: "8px" }}>
                             {site.parsedDurationMins.toFixed(1)} m
                           </td>
@@ -1602,7 +1305,7 @@ const NURDashboard = ({ config, data, setData }) => {
                     ) : (
                       <tr>
                         <td
-                          colSpan="5"
+                          colSpan="4"
                           style={{
                             textAlign: "center",
                             padding: "2rem",

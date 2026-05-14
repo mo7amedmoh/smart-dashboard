@@ -7,6 +7,7 @@ import {
   Upload,
   Target,
   Palette,
+  Filter,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -233,11 +234,17 @@ const Configuration = ({ config, setConfig }) => {
   }, [config]);
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    setLocalConfig((prev) => ({
-      ...prev,
-      [name]: type === "number" ? Number(value) : value,
-    }));
+    const { name, value, type, checked } = e.target;
+    const val = type === "checkbox" ? checked : (type === "number" ? Number(value) : value);
+    
+    setLocalConfig((prev) => {
+      const next = { ...prev, [name]: val };
+      // Auto-save checkboxes to make it immediate for the user
+      if (type === "checkbox") {
+        setConfig(next);
+      }
+      return next;
+    });
   };
 
   const handleSave = () => {
@@ -1049,6 +1056,176 @@ const Configuration = ({ config, setConfig }) => {
       </div>
 
       <div className="glass-panel" style={{ padding: "2rem" }}>
+        <h3
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "1.25rem",
+            marginBottom: "1.5rem",
+            borderBottom: "1px solid var(--glass-border)",
+            paddingBottom: "0.5rem",
+          }}
+        >
+          <Filter size={20} color="var(--accent)" />
+          Exclusion Rules
+        </h3>
+        <p
+          style={{
+            color: "var(--text-secondary)",
+            fontSize: "0.875rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Enable or disable data exclusions. These filters apply during data processing.
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "1.5rem",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              cursor: "pointer",
+              padding: "0.75rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="excludeBlocked"
+              checked={localConfig.excludeBlocked !== false}
+              onChange={handleChange}
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Exclude Blocked Sites</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Exclude rows where "Blocked" is Yes/True.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              cursor: "pointer",
+              padding: "0.75rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="excludeLL"
+              checked={localConfig.excludeLL !== false}
+              onChange={handleChange}
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Exclude LL Area</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Exclude rows where "Area" is "LL".
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              cursor: "pointer",
+              padding: "0.75rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="excludeVoluntary"
+              checked={localConfig.excludeVoluntary !== false}
+              onChange={handleChange}
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Exclude Voluntary</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Exclude rows where "Outage Type" is "Voluntary".
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              cursor: "pointer",
+              padding: "0.75rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="excludeFM"
+              checked={localConfig.excludeFM !== false}
+              onChange={handleChange}
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Exclude Force Majeure</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Exclude rows marked as Force Majeure.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              cursor: "pointer",
+              padding: "0.75rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="excludeShortDuration"
+              checked={!!localConfig.excludeShortDuration}
+              onChange={handleChange}
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Exclude Short Durations</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Exclude incidents with duration &lt; 20 minutes.
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div className="glass-panel" style={{ padding: "2rem" }}>
+
         <h3
           style={{
             display: "flex",

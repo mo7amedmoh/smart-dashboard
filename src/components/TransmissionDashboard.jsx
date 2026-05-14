@@ -31,37 +31,7 @@ import {
 } from "recharts";
 import FileUpload from "./FileUpload";
 
-// Helper to find column keys robustly with optional exclusions
-const findKey = (obj, searchStr, excludeStr = null) => {
-  if (!obj) return null;
-  const keys = Object.keys(obj);
-  return keys.find((k) => {
-    const lowKey = k.toLowerCase();
-    const lowSearch = searchStr.toLowerCase();
-    if (!lowKey.includes(lowSearch)) return false;
-    if (excludeStr && lowKey.includes(excludeStr.toLowerCase())) return false;
-    return true;
-  });
-};
-
-// Parse Excel date
-const parseExcelDate = (val) => {
-  if (val == null) return new Date();
-  if (typeof val === "number") {
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-    return new Date(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      d.getUTCHours(),
-      d.getUTCMinutes(),
-      d.getUTCSeconds(),
-    );
-  }
-  const d = new Date(val);
-  if (!isNaN(d)) return d;
-  return new Date();
-};
+import { findKey, parseExcelDate, extractTxData } from "../utils/dataUtils";
 
 const extractSiteCode = (str) => {
   if (!str) return "Unknown";
@@ -73,87 +43,6 @@ const extractSiteCode = (str) => {
   // Fallback: take the last part after split by _ or .
   const parts = str.split(/[._]/);
   return parts[parts.length - 1].toUpperCase();
-};
-
-const extractTxData = (rawData, config) => {
-  if (!rawData || !rawData.length) return [];
-
-  return rawData.map((row, idx) => {
-    const numKey =
-      findKey(row, "Number") || findKey(row, "Incident") || findKey(row, "ID");
-    const openKey = findKey(row, "Open Time") || findKey(row, "Start");
-    const closeKey = findKey(row, "Close Time") || findKey(row, "End");
-    const typeKey = findKey(row, "Outage Type") || findKey(row, "Type");
-    const titleKey = findKey(row, "Title") || findKey(row, "Impacted");
-    const descKey = findKey(row, "Description");
-    const statusKey = findKey(row, "Status");
-
-    const title = String(row[titleKey] || "");
-    const openTime = parseExcelDate(row[openKey]);
-    const closeTime = row[closeKey] ? parseExcelDate(row[closeKey]) : null;
-
-    // Link extraction logic: Find site codes even if <> is missing
-    let ne = "Unknown";
-    let fe = "Unknown";
-    let neSite = "Unknown";
-    let feSite = "Unknown";
-    let linkId = "Unknown";
-    let mappedLinkId = "Unknown";
-
-    // Use regex to find all site codes in the title string
-    // Flexible pattern: 3-6 digits followed by 1-2 letters
-    const siteCodeRegex = /([0-9]{3,6}[A-Z]{1,2})/gi;
-    const matches = Array.from(title.matchAll(siteCodeRegex));
-
-    if (matches.length >= 2) {
-      // We found at least two site codes
-      neSite = matches[0][1].toUpperCase();
-      feSite = matches[1][1].toUpperCase();
-
-      // Try to find the original full names if <> exists
-      if (title.includes("<>")) {
-        const parts = title.split("<>");
-        ne = parts[0].trim();
-        fe = parts[1].trim();
-      } else {
-        ne = neSite;
-        fe = feSite;
-      }
-
-      // Deduplicate for stats
-      const sites = [neSite, feSite].sort();
-      linkId = sites.join("<>");
-
-      // Construct mapped display title
-      const nameA = config?.siteDatabase?.[sites[0]] || "Unknown Site";
-      const nameB = config?.siteDatabase?.[sites[1]] || "Unknown Site";
-      mappedLinkId = `${nameA} . ${sites[0]} <> ${nameB} . ${sites[1]}`;
-    } else if (matches.length === 1) {
-      neSite = matches[0][1].toUpperCase();
-      ne = neSite;
-    }
-
-    // Determine what to display in the title column
-    const displayTitle = matches.length >= 2 ? mappedLinkId : title;
-
-    return {
-      ...row,
-      id: row[numKey] || `TX-${idx}`,
-      openTime,
-      closeTime,
-      outageType: row[typeKey] || "Unknown",
-      title: displayTitle,
-      originalTitle: title,
-      description: row[descKey] || "",
-      status: row[statusKey] || "Unknown",
-      ne,
-      fe,
-      neSite,
-      feSite,
-      linkId: matches.length >= 2 ? mappedLinkId : linkId,
-      dateStr: `${openTime.getDate()}-${openTime.toLocaleString("default", { month: "short" })}`,
-    };
-  });
 };
 
 const TransmissionDashboard = ({ config, data, setData }) => {
@@ -180,7 +69,11 @@ const TransmissionDashboard = ({ config, data, setData }) => {
     const total = processedData.length;
     const open = processedData.filter((d) => {
       const status = d.status.toLowerCase();
-      return status.includes("open") || status.includes("active");
+      return (
+        status.includes("open") ||
+        status.includes("active") ||
+        status.includes("in progress")
+      );
     }).length;
     const closed = total - open;
 
