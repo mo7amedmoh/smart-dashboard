@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Activity, HardDrive, Wifi, TrendingUp, TrendingDown, Layers, BarChart3, Target, Zap, Shield, Users, Clock } from "lucide-react";
+import { Activity, HardDrive, Wifi, TrendingUp, TrendingDown, Layers, BarChart3, Target, Zap, Shield, Users, Clock, Filter } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, PieChart, Pie, Cell, LabelList, AreaChart, Area, RadialBarChart, RadialBar, Legend } from "recharts";
 import { extractDataWithNUR, extractHWData, extractTxData } from "../utils/dataUtils";
 
@@ -38,18 +38,42 @@ const SectionTitle = ({ icon: Icon, title, subtitle }) => (
 );
 
 const ManagementDashboardV2 = ({ config, nurData, hwData, txData, selectedWeek }) => {
-  const processedNUR = useMemo(() => nurData ? extractDataWithNUR(nurData, config) : [], [nurData, config]);
+  // ── Raw processed data ────────────────────────────────────────────────────
+  const allNUR = useMemo(() => nurData ? extractDataWithNUR(nurData, config) : [], [nurData, config]);
+  const allHW  = useMemo(() => hwData  ? extractHWData(hwData, config)       : [], [hwData, config]);
+  const allTx  = useMemo(() => txData  ? extractTxData(txData, config)        : [], [txData, config]);
+
+  // ── Week-filtered data ────────────────────────────────────────────────────
+  const processedNUR = useMemo(() => {
+    if (!selectedWeek || selectedWeek === "All") return allNUR;
+    return allNUR.filter(d => d.week === selectedWeek);
+  }, [allNUR, selectedWeek]);
+
   const processedHW = useMemo(() => {
-    if (!hwData) return [];
-    return extractHWData(hwData, config).filter(d => d.status !== "Closed");
-  }, [hwData, config]);
+    const base = allHW.filter(d => d.status !== "Closed");
+    if (!selectedWeek || selectedWeek === "All") return base;
+    return base.filter(d => d.openWeek === selectedWeek);
+  }, [allHW, selectedWeek]);
+
   const processedTx = useMemo(() => {
-    if (!txData) return [];
-    return extractTxData(txData, config).filter(d => {
+    const base = allTx.filter(d => {
       const s = d.status.toLowerCase();
       return !s.includes("solved") && !s.includes("closed") && !s.includes("cleared") && !s.includes("resolved");
     });
-  }, [txData, config]);
+    if (!selectedWeek || selectedWeek === "All") return base;
+    // Derive week number from openTime for TX records (matches getWeekNumber in dataUtils)
+    const weekNum = parseInt(selectedWeek.replace(/\D/g, ""), 10);
+    return base.filter(d => {
+      if (!d.openTime) return false;
+      const dt = d.openTime instanceof Date ? d.openTime : new Date(d.openTime);
+      const jan1 = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+      const dayOfYear = Math.floor(
+        (Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()) - jan1) / 86400000
+      );
+      const txWeek = Math.ceil((dayOfYear + (jan1.getUTCDay() + 1)) / 7);
+      return txWeek === weekNum;
+    });
+  }, [allTx, selectedWeek]);
 
   // NUR Summary
   const nurSummary = useMemo(() => {
@@ -171,12 +195,22 @@ const ManagementDashboardV2 = ({ config, nurData, hwData, txData, selectedWeek }
           </div>
           <div>
             <h1 className="text-gradient" style={{ fontSize:"2rem", fontWeight:700, margin:0 }}>Executive Summary</h1>
-            <p style={{ color:"var(--text-secondary)", margin:0, fontSize:"0.85rem" }}>Consolidated view across all modules • Management Dashboard V2</p>
+            <p style={{ color:"var(--text-secondary)", margin:0, fontSize:"0.85rem" }}>Consolidated view across all modules • Management Dashboard</p>
           </div>
         </div>
-        <div className="glass-panel" style={{ padding:"0.5rem 1rem", display:"flex", alignItems:"center", gap:8 }}>
-          <Clock size={14} color="var(--accent)" />
-          <span style={{ fontSize:"0.8rem", color:"var(--text-secondary)" }}>Last updated: {new Date().toLocaleString()}</span>
+        <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", flexWrap:"wrap" }}>
+          {/* Active week badge */}
+          <div className="glass-panel" style={{ padding:"0.5rem 1rem", display:"flex", alignItems:"center", gap:8 }}>
+            <Filter size={14} color="var(--accent)" />
+            <span style={{ fontSize:"0.8rem", color:"var(--text-secondary)" }}>Week:</span>
+            <span style={{ fontSize:"0.8rem", fontWeight:700, color: selectedWeek && selectedWeek !== "All" ? "var(--accent)" : "var(--text-secondary)" }}>
+              {selectedWeek && selectedWeek !== "All" ? selectedWeek : "All Weeks"}
+            </span>
+          </div>
+          <div className="glass-panel" style={{ padding:"0.5rem 1rem", display:"flex", alignItems:"center", gap:8 }}>
+            <Clock size={14} color="var(--accent)" />
+            <span style={{ fontSize:"0.8rem", color:"var(--text-secondary)" }}>Last updated: {new Date().toLocaleString()}</span>
+          </div>
         </div>
       </div>
 

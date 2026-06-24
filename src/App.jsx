@@ -13,8 +13,7 @@ import {
 import NURDashboard from "./components/NURDashboard";
 import NetworkHWDashboard from "./components/NetworkHWDashboard";
 import TransmissionDashboard from "./components/TransmissionDashboard";
-import ManagementDashboard from "./components/ManagementDashboard";
-import ManagementDashboardV2 from "./components/ManagementDashboardV2";
+import ManagementDashboard from "./components/ManagementDashboardV2";
 import Configuration from "./components/Configuration";
 import html2canvas from "html2canvas";
 
@@ -114,7 +113,6 @@ function App() {
 
   const navItems = [
     { id: "Management", label: "Management", icon: Layers },
-    { id: "ManagementV2", label: "Management V2", icon: Layers },
     { id: "NUR", label: "NUR", icon: Activity },
     { id: "NetworkHW", label: "Network HW", icon: HardDrive },
     { id: "TxIssue", label: "Tx Issue", icon: Wifi },
@@ -236,15 +234,6 @@ function App() {
       <main className="main-content">
         {activeTab === "Management" && (
           <ManagementDashboard
-            config={config}
-            nurData={nurData}
-            hwData={networkHWData}
-            txData={txIssueData}
-            selectedWeek={selectedWeek}
-          />
-        )}
-        {activeTab === "ManagementV2" && (
-          <ManagementDashboardV2
             config={config}
             nurData={nurData}
             hwData={networkHWData}
