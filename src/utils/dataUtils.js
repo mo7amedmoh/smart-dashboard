@@ -19,7 +19,23 @@ export const parseDurationToMins = (val) => {
     return val * 24 * 60; // Excel decimal fraction of a day
   }
   if (typeof val === "string") {
-    const parts = val.split(":");
+    const trimmed = val.trim();
+    if (!trimmed) return 0;
+
+    // Check if it matches a format with days: "d hh:mm:ss", "d.hh:mm:ss", "d hh:mm", or "d.hh:mm"
+    const daysRegex = /^(?:(\d+)\s+|(\d+)\.(?=\d+:))?(\d+):(\d+)(?::(\d+))?$/;
+    const match = trimmed.match(daysRegex);
+
+    if (match) {
+      const days = parseInt(match[1] || match[2] || 0, 10);
+      const hours = parseInt(match[3] || 0, 10);
+      const minutes = parseInt(match[4] || 0, 10);
+      const seconds = parseInt(match[5] || 0, 10);
+      return days * 24 * 60 + hours * 60 + minutes + seconds / 60;
+    }
+
+    // Fallback to split if it's standard time but not matched by regex
+    const parts = trimmed.split(":");
     if (parts.length === 3) {
       return (
         parseInt(parts[0] || 0, 10) * 60 +
@@ -29,7 +45,7 @@ export const parseDurationToMins = (val) => {
     } else if (parts.length === 2) {
       return parseInt(parts[0] || 0, 10) * 60 + parseInt(parts[1] || 0, 10);
     }
-    const parsed = parseFloat(val);
+    const parsed = parseFloat(trimmed);
     if (!isNaN(parsed)) return parsed;
   }
   return 0;
